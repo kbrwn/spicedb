@@ -45,6 +45,7 @@ func (c *Config) ToOption() ConfigOption {
 		to.MaxReadRelationshipsLimit = c.MaxReadRelationshipsLimit
 		to.MaxDeleteRelationshipsLimit = c.MaxDeleteRelationshipsLimit
 		to.MaxLookupResourcesLimit = c.MaxLookupResourcesLimit
+		to.EnableLookupResourcesCursorLookahead = c.EnableLookupResourcesCursorLookahead
 		to.MaxBulkExportRelationshipsLimit = c.MaxBulkExportRelationshipsLimit
 		to.CaveatTypeSet = c.CaveatTypeSet
 		to.ShutdownGracePeriod = c.ShutdownGracePeriod
@@ -94,6 +95,7 @@ func (c *Config) DebugMap() map[string]any {
 	debugMap["MaxReadRelationshipsLimit"] = c.MaxReadRelationshipsLimit
 	debugMap["MaxDeleteRelationshipsLimit"] = c.MaxDeleteRelationshipsLimit
 	debugMap["MaxLookupResourcesLimit"] = c.MaxLookupResourcesLimit
+	debugMap["EnableLookupResourcesCursorLookahead"] = c.EnableLookupResourcesCursorLookahead
 	debugMap["MaxBulkExportRelationshipsLimit"] = c.MaxBulkExportRelationshipsLimit
 	if dm, ok := any(&c.ShutdownGracePeriod).(interface {
 		DebugMap() map[string]any
@@ -230,6 +232,13 @@ func WithMaxDeleteRelationshipsLimit(maxDeleteRelationshipsLimit uint32) ConfigO
 func WithMaxLookupResourcesLimit(maxLookupResourcesLimit uint32) ConfigOption {
 	return func(c *Config) {
 		c.MaxLookupResourcesLimit = maxLookupResourcesLimit
+	}
+}
+
+// WithEnableLookupResourcesCursorLookahead returns an option that can set EnableLookupResourcesCursorLookahead on a Config
+func WithEnableLookupResourcesCursorLookahead(enableLookupResourcesCursorLookahead bool) ConfigOption {
+	return func(c *Config) {
+		c.EnableLookupResourcesCursorLookahead = enableLookupResourcesCursorLookahead
 	}
 }
 

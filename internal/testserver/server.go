@@ -24,13 +24,14 @@ import (
 
 // ServerConfig is configuration for the test server.
 type ServerConfig struct {
-	MaxUpdatesPerWrite                 uint16
-	MaxPreconditionsCount              uint16
-	MaxRelationshipContextSize         int
-	StreamingAPITimeout                time.Duration
-	CaveatTypeSet                      *caveattypes.TypeSet
-	EnableExperimentalLookupResources3 bool
-	DataLayerOpts                      []datalayer.DataLayerOption
+	MaxUpdatesPerWrite                   uint16
+	MaxPreconditionsCount                uint16
+	MaxRelationshipContextSize           int
+	StreamingAPITimeout                  time.Duration
+	CaveatTypeSet                        *caveattypes.TypeSet
+	EnableExperimentalLookupResources3   bool
+	EnableLookupResourcesCursorLookahead bool
+	DataLayerOpts                        []datalayer.DataLayerOption
 
 	// MetricsRegistry, when non-nil, is the Prometheus registry the server's
 	// metrics are registered with, allowing tests to make assertions on them.
@@ -89,6 +90,7 @@ func NewTestServerWithConfigAndDatastore(t testing.TB, schemaPrefixRequired bool
 		server.WithStreamingAPITimeout(config.StreamingAPITimeout),
 		server.WithMaxRelationshipContextSize(config.MaxRelationshipContextSize),
 		server.WithExperimentalLookupResourcesVersion(lrver),
+		server.WithEnableLookupResourcesCursorLookahead(config.EnableLookupResourcesCursorLookahead),
 		server.WithGRPCServer(util.GRPCServerConfig{
 			Network: util.BufferedNetwork,
 			Enabled: true,

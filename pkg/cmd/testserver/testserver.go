@@ -35,21 +35,22 @@ const (
 
 //go:generate go run github.com/ecordell/optgen -output zz_generated.options.go . Config
 type Config struct {
-	GRPCServer                      util.GRPCServerConfig `debugmap:"visible"`
-	ReadOnlyGRPCServer              util.GRPCServerConfig `debugmap:"visible"`
-	HTTPGateway                     util.HTTPServerConfig `debugmap:"visible"`
-	ReadOnlyHTTPGateway             util.HTTPServerConfig `debugmap:"visible"`
-	LoadConfigs                     []string              `debugmap:"visible"`
-	MaximumUpdatesPerWrite          uint16                `debugmap:"visible"`
-	MaximumPreconditionCount        uint16                `debugmap:"visible"`
-	MaxCaveatContextSize            int                   `debugmap:"visible"`
-	MaxRelationshipContextSize      int                   `debugmap:"visible"`
-	MaxReadRelationshipsLimit       uint32                `debugmap:"visible"`
-	MaxDeleteRelationshipsLimit     uint32                `debugmap:"visible"`
-	MaxLookupResourcesLimit         uint32                `debugmap:"visible"`
-	MaxBulkExportRelationshipsLimit uint32                `debugmap:"visible"`
-	CaveatTypeSet                   *caveattypes.TypeSet  `debugmap:"hidden"`
-	ShutdownGracePeriod             time.Duration         `debugmap:"visible"`
+	GRPCServer                           util.GRPCServerConfig `debugmap:"visible"`
+	ReadOnlyGRPCServer                   util.GRPCServerConfig `debugmap:"visible"`
+	HTTPGateway                          util.HTTPServerConfig `debugmap:"visible"`
+	ReadOnlyHTTPGateway                  util.HTTPServerConfig `debugmap:"visible"`
+	LoadConfigs                          []string              `debugmap:"visible"`
+	MaximumUpdatesPerWrite               uint16                `debugmap:"visible"`
+	MaximumPreconditionCount             uint16                `debugmap:"visible"`
+	MaxCaveatContextSize                 int                   `debugmap:"visible"`
+	MaxRelationshipContextSize           int                   `debugmap:"visible"`
+	MaxReadRelationshipsLimit            uint32                `debugmap:"visible"`
+	MaxDeleteRelationshipsLimit          uint32                `debugmap:"visible"`
+	MaxLookupResourcesLimit              uint32                `debugmap:"visible"`
+	EnableLookupResourcesCursorLookahead bool                  `debugmap:"visible"`
+	MaxBulkExportRelationshipsLimit      uint32                `debugmap:"visible"`
+	CaveatTypeSet                        *caveattypes.TypeSet  `debugmap:"hidden"`
+	ShutdownGracePeriod                  time.Duration         `debugmap:"visible"`
 }
 
 type datastoreReady struct{}
@@ -102,18 +103,19 @@ func (c *Config) complete(ctx context.Context) (*completedTestServer, error) {
 			services.V1SchemaServiceEnabled,
 			services.WatchServiceEnabled,
 			v1svc.PermissionsServerConfig{
-				Metrics:                         metrics,
-				MaxPreconditionsCount:           c.MaximumPreconditionCount,
-				MaxUpdatesPerWrite:              c.MaximumUpdatesPerWrite,
-				MaximumAPIDepth:                 maxDepth,
-				MaxCaveatContextSize:            c.MaxCaveatContextSize,
-				MaxReadRelationshipsLimit:       c.MaxReadRelationshipsLimit,
-				MaxDeleteRelationshipsLimit:     c.MaxDeleteRelationshipsLimit,
-				MaxLookupResourcesLimit:         c.MaxLookupResourcesLimit,
-				MaxBulkExportRelationshipsLimit: c.MaxBulkExportRelationshipsLimit,
-				DispatchChunkSize:               defaultMaxChunkSize,
-				ExpiringRelationshipsEnabled:    true,
-				CaveatTypeSet:                   cts,
+				Metrics:                              metrics,
+				MaxPreconditionsCount:                c.MaximumPreconditionCount,
+				MaxUpdatesPerWrite:                   c.MaximumUpdatesPerWrite,
+				MaximumAPIDepth:                      maxDepth,
+				MaxCaveatContextSize:                 c.MaxCaveatContextSize,
+				MaxReadRelationshipsLimit:            c.MaxReadRelationshipsLimit,
+				MaxDeleteRelationshipsLimit:          c.MaxDeleteRelationshipsLimit,
+				MaxLookupResourcesLimit:              c.MaxLookupResourcesLimit,
+				EnableLookupResourcesCursorLookahead: c.EnableLookupResourcesCursorLookahead,
+				MaxBulkExportRelationshipsLimit:      c.MaxBulkExportRelationshipsLimit,
+				DispatchChunkSize:                    defaultMaxChunkSize,
+				ExpiringRelationshipsEnabled:         true,
+				CaveatTypeSet:                        cts,
 			},
 			1*time.Second,
 		)

@@ -1984,8 +1984,10 @@ func TestLookupResourcesWithCursors(t *testing.T) {
 					for _, tc := range testCases {
 						t.Run(fmt.Sprintf("%s::%s from %s:%s#%s", tc.objectType, tc.permission, tc.subject.Object.ObjectType, tc.subject.Object.ObjectId, tc.subject.OptionalRelation), func(t *testing.T) {
 							require := require.New(t)
+							config := testserver.DefaultTestServerConfig
+							config.EnableLookupResourcesCursorLookahead = true
 							conn, _, revision := testserver.NewTestServerWithConfig(t, delta, memdb.DisableGC, true,
-								testserver.DefaultTestServerConfig,
+								config,
 								tf.StandardDatastoreWithData)
 							client := v1.NewPermissionsServiceClient(conn)
 
@@ -2026,10 +2028,11 @@ func TestLookupResourcesWithCursors(t *testing.T) {
 								}
 
 								require.LessOrEqual(len(locallyResolvedObjectIds), limit)
-								if len(locallyResolvedObjectIds) < limit {
+								if currentCursor == nil || len(locallyResolvedObjectIds) < limit {
 									break
 								}
 							}
+							require.Nil(currentCursor, "the final resource must not have a cursor")
 
 							resolvedObjectIds := foundObjectIds.AsSlice()
 							slices.Sort(tc.expectedObjectIds)

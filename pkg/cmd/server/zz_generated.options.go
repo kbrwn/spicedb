@@ -97,6 +97,7 @@ func (c *Config) ToOption() ConfigOption {
 		to.MaxBulkExportRelationshipsLimit = c.MaxBulkExportRelationshipsLimit
 		to.EnableExperimentalLookupResources = c.EnableExperimentalLookupResources
 		to.ExperimentalLookupResourcesVersion = c.ExperimentalLookupResourcesVersion
+		to.EnableLookupResourcesCursorLookahead = c.EnableLookupResourcesCursorLookahead
 		to.ExperimentalQueryPlan = c.ExperimentalQueryPlan
 		to.EnableRelationshipExpiration = c.EnableRelationshipExpiration
 		to.EnableRevisionHeartbeat = c.EnableRevisionHeartbeat
@@ -352,6 +353,7 @@ func (c *Config) DebugMap() map[string]any {
 	} else {
 		debugMap["ExperimentalLookupResourcesVersion"] = c.ExperimentalLookupResourcesVersion
 	}
+	debugMap["EnableLookupResourcesCursorLookahead"] = c.EnableLookupResourcesCursorLookahead
 	if c.ExperimentalQueryPlan == nil {
 		debugMap["ExperimentalQueryPlan"] = "nil"
 	} else {
@@ -879,6 +881,13 @@ func WithEnableExperimentalLookupResources(enableExperimentalLookupResources boo
 func WithExperimentalLookupResourcesVersion(experimentalLookupResourcesVersion string) ConfigOption {
 	return func(c *Config) {
 		c.ExperimentalLookupResourcesVersion = experimentalLookupResourcesVersion
+	}
+}
+
+// WithEnableLookupResourcesCursorLookahead returns an option that can set EnableLookupResourcesCursorLookahead on a Config
+func WithEnableLookupResourcesCursorLookahead(enableLookupResourcesCursorLookahead bool) ConfigOption {
+	return func(c *Config) {
+		c.EnableLookupResourcesCursorLookahead = enableLookupResourcesCursorLookahead
 	}
 }
 

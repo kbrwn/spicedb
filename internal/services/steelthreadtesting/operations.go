@@ -210,6 +210,9 @@ func cursoredLookupResources(parameters map[string]any, clients stClients) (any,
 		}
 
 		nodeSets = append(nodeSets, yamlNodes)
+		if currentCursor == nil {
+			break
+		}
 	}
 
 	for index, count := range resultCounts {

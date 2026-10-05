@@ -30,6 +30,7 @@ func RegisterTestingFlags(cmd *cobra.Command, config *testserver.Config) {
 	cmd.Flags().Uint32Var(&config.MaxReadRelationshipsLimit, "max-read-relationships-limit", 1000, "maximum number of relationships that can be read in a single request")
 	cmd.Flags().Uint32Var(&config.MaxDeleteRelationshipsLimit, "max-delete-relationships-limit", 1000, "maximum number of relationships that can be deleted in a single request")
 	cmd.Flags().Uint32Var(&config.MaxLookupResourcesLimit, "max-lookup-resources-limit", 1000, "maximum number of resources that can be looked up in a single request")
+	cmd.Flags().BoolVar(&config.EnableLookupResourcesCursorLookahead, "experimental-lookup-resources-cursor-lookahead", false, "resolve one additional LookupResources result to omit the cursor when no more results remain")
 	cmd.Flags().Uint32Var(&config.MaxBulkExportRelationshipsLimit, "max-bulk-export-relationships-limit", 10_000, "maximum number of relationships that can be exported in a single request")
 	cmd.Flags().DurationVar(&config.ShutdownGracePeriod, "grpc-shutdown-grace-period", 5*time.Second, "time limit given to the server to shutdown gracefully after it receives SIGINT or SIGTERM. A value of zero means no limit")
 	util.RegisterCommonFlags(cmd)

@@ -111,6 +111,10 @@ type PermissionsServerConfig struct {
 	// EnableExperimentalLookupResources3 is used to enable LookupResources v3 for testing.
 	EnableExperimentalLookupResources3 bool // TODO: remove when LookupResources v3 is fully enabled
 
+	// EnableLookupResourcesCursorLookahead resolves one additional result so the
+	// final LookupResources response omits its cursor when no more results remain.
+	EnableLookupResourcesCursorLookahead bool
+
 	// ExperimentalQueryPlan configures which API operations use the experimental query plan.
 	ExperimentalQueryPlan ExperimentalQueryPlanConfig
 
@@ -146,26 +150,27 @@ func NewPermissionsServer(
 	validator protovalidate.Validator,
 ) v1.PermissionsServiceServer {
 	configWithDefaults := PermissionsServerConfig{
-		MaxPreconditionsCount:              defaultIfZero(config.MaxPreconditionsCount, 1000),
-		MaxUpdatesPerWrite:                 defaultIfZero(config.MaxUpdatesPerWrite, 1000),
-		MaximumAPIDepth:                    defaultIfZero(config.MaximumAPIDepth, 50),
-		StreamingAPITimeout:                defaultIfZero(config.StreamingAPITimeout, 30*time.Second),
-		MaxCaveatContextSize:               defaultIfZero(config.MaxCaveatContextSize, 4096),
-		MaxRelationshipContextSize:         defaultIfZero(config.MaxRelationshipContextSize, 25_000),
-		MaxDatastoreReadPageSize:           defaultIfZero(config.MaxDatastoreReadPageSize, 1_000),
-		MaxReadRelationshipsLimit:          defaultIfZero(config.MaxReadRelationshipsLimit, 1_000),
-		MaxDeleteRelationshipsLimit:        defaultIfZero(config.MaxDeleteRelationshipsLimit, 1_000),
-		MaxLookupResourcesLimit:            defaultIfZero(config.MaxLookupResourcesLimit, 1_000),
-		MaxBulkExportRelationshipsLimit:    defaultIfZero(config.MaxBulkExportRelationshipsLimit, 10_000),
-		DispatchChunkSize:                  defaultIfZero(config.DispatchChunkSize, 100),
-		MaxCheckBulkConcurrency:            defaultIfZero(config.MaxCheckBulkConcurrency, 50),
-		CaveatTypeSet:                      caveattypes.TypeSetOrDefault(config.CaveatTypeSet),
-		ExpiringRelationshipsEnabled:       config.ExpiringRelationshipsEnabled,
-		PerformanceInsightMetricsEnabled:   config.PerformanceInsightMetricsEnabled,
-		EnableExperimentalLookupResources3: config.EnableExperimentalLookupResources3,
-		ExperimentalQueryPlan:              config.ExperimentalQueryPlan,
-		Metrics:                            config.Metrics,
-		QueryPlanMetadata:                  config.QueryPlanMetadata,
+		MaxPreconditionsCount:                defaultIfZero(config.MaxPreconditionsCount, 1000),
+		MaxUpdatesPerWrite:                   defaultIfZero(config.MaxUpdatesPerWrite, 1000),
+		MaximumAPIDepth:                      defaultIfZero(config.MaximumAPIDepth, 50),
+		StreamingAPITimeout:                  defaultIfZero(config.StreamingAPITimeout, 30*time.Second),
+		MaxCaveatContextSize:                 defaultIfZero(config.MaxCaveatContextSize, 4096),
+		MaxRelationshipContextSize:           defaultIfZero(config.MaxRelationshipContextSize, 25_000),
+		MaxDatastoreReadPageSize:             defaultIfZero(config.MaxDatastoreReadPageSize, 1_000),
+		MaxReadRelationshipsLimit:            defaultIfZero(config.MaxReadRelationshipsLimit, 1_000),
+		MaxDeleteRelationshipsLimit:          defaultIfZero(config.MaxDeleteRelationshipsLimit, 1_000),
+		MaxLookupResourcesLimit:              defaultIfZero(config.MaxLookupResourcesLimit, 1_000),
+		MaxBulkExportRelationshipsLimit:      defaultIfZero(config.MaxBulkExportRelationshipsLimit, 10_000),
+		DispatchChunkSize:                    defaultIfZero(config.DispatchChunkSize, 100),
+		MaxCheckBulkConcurrency:              defaultIfZero(config.MaxCheckBulkConcurrency, 50),
+		CaveatTypeSet:                        caveattypes.TypeSetOrDefault(config.CaveatTypeSet),
+		ExpiringRelationshipsEnabled:         config.ExpiringRelationshipsEnabled,
+		PerformanceInsightMetricsEnabled:     config.PerformanceInsightMetricsEnabled,
+		EnableExperimentalLookupResources3:   config.EnableExperimentalLookupResources3,
+		EnableLookupResourcesCursorLookahead: config.EnableLookupResourcesCursorLookahead,
+		ExperimentalQueryPlan:                config.ExperimentalQueryPlan,
+		Metrics:                              config.Metrics,
+		QueryPlanMetadata:                    config.QueryPlanMetadata,
 	}
 	if configWithDefaults.QueryPlanMetadata == nil {
 		configWithDefaults.QueryPlanMetadata = query.NewQueryPlanMetadata()

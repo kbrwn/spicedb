@@ -550,9 +550,13 @@ func (ps *permissionServer) lookupResources3(req *v1.LookupResourcesRequest, res
 	}
 
 	alreadyPublishedPermissionedResourceIds := map[string]struct{}{}
-	var totalCountPublished uint64
+	responses := &lookupResourcesResponseStream{
+		send:      resp.Send,
+		limit:     req.OptionalLimit,
+		lookahead: ps.config.EnableLookupResourcesCursorLookahead,
+	}
 	defer func() {
-		telemetry.LogicalChecks.Add(float64(totalCountPublished))
+		telemetry.LogicalChecks.Add(float64(responses.published))
 	}()
 
 	stream := dispatchpkg.NewHandlingDispatchStream(ctx, func(result *dispatch.DispatchLookupResources3Response) error {
@@ -587,7 +591,7 @@ func (ps *permissionServer) lookupResources3(req *v1.LookupResourcesRequest, res
 				encodedCursor = ec
 			}
 
-			err = resp.Send(&v1.LookupResourcesResponse{
+			err = responses.publish(&v1.LookupResourcesResponse{
 				LookedUpAt:        revisionReadAt,
 				ResourceObjectId:  item.ResourceId,
 				Permissionship:    permissionship,
@@ -597,8 +601,6 @@ func (ps *permissionServer) lookupResources3(req *v1.LookupResourcesRequest, res
 			if err != nil {
 				return err
 			}
-
-			totalCountPublished++
 		}
 
 		return nil
@@ -609,34 +611,36 @@ func (ps *permissionServer) lookupResources3(req *v1.LookupResourcesRequest, res
 		return err
 	}
 
-	err = ps.dispatch.DispatchLookupResources3(
-		&dispatch.DispatchLookupResources3Request{
-			Metadata: &dispatch.ResolverMeta{
-				AtRevision:     atRevision.String(),
-				DepthRemaining: ps.config.MaximumAPIDepth,
-				TraversalBloom: bf,
-				SchemaHash:     []byte(schemaHash),
+	err = responses.run(func(limit uint32) error {
+		return ps.dispatch.DispatchLookupResources3(
+			&dispatch.DispatchLookupResources3Request{
+				Metadata: &dispatch.ResolverMeta{
+					AtRevision:     atRevision.String(),
+					DepthRemaining: ps.config.MaximumAPIDepth,
+					TraversalBloom: bf,
+					SchemaHash:     []byte(schemaHash),
+				},
+				ResourceRelation: &core.RelationReference{
+					Namespace: req.ResourceObjectType,
+					Relation:  req.Permission,
+				},
+				SubjectRelation: &core.RelationReference{
+					Namespace: req.Subject.Object.ObjectType,
+					Relation:  normalizeSubjectRelation(req.Subject),
+				},
+				SubjectIds: []string{req.Subject.Object.ObjectId},
+				TerminalSubject: &core.ObjectAndRelation{
+					Namespace: req.Subject.Object.ObjectType,
+					ObjectId:  req.Subject.Object.ObjectId,
+					Relation:  normalizeSubjectRelation(req.Subject),
+				},
+				Context:          req.Context,
+				OptionalCursor:   currentCursor,
+				OptionalLimit:    limit,
+				EnableDebugTrace: req.WithDebug,
 			},
-			ResourceRelation: &core.RelationReference{
-				Namespace: req.ResourceObjectType,
-				Relation:  req.Permission,
-			},
-			SubjectRelation: &core.RelationReference{
-				Namespace: req.Subject.Object.ObjectType,
-				Relation:  normalizeSubjectRelation(req.Subject),
-			},
-			SubjectIds: []string{req.Subject.Object.ObjectId},
-			TerminalSubject: &core.ObjectAndRelation{
-				Namespace: req.Subject.Object.ObjectType,
-				ObjectId:  req.Subject.Object.ObjectId,
-				Relation:  normalizeSubjectRelation(req.Subject),
-			},
-			Context:          req.Context,
-			OptionalCursor:   currentCursor,
-			OptionalLimit:    req.OptionalLimit,
-			EnableDebugTrace: req.WithDebug,
-		},
-		stream)
+			stream)
+	})
 	if err != nil {
 		if req.WithDebug && dispatchpkg.IsMaxDepthExceeded(err) {
 			if debugInfo := dispatchpkg.ExtractTraversalTrace(err); debugInfo != nil {
@@ -713,9 +717,13 @@ func (ps *permissionServer) lookupResources2(req *v1.LookupResourcesRequest, res
 	}
 
 	alreadyPublishedPermissionedResourceIds := map[string]struct{}{}
-	var totalCountPublished uint64
+	responses := &lookupResourcesResponseStream{
+		send:      resp.Send,
+		limit:     req.OptionalLimit,
+		lookahead: ps.config.EnableLookupResourcesCursorLookahead,
+	}
 	defer func() {
-		telemetry.LogicalChecks.Add(float64(totalCountPublished))
+		telemetry.LogicalChecks.Add(float64(responses.published))
 	}()
 
 	stream := dispatchpkg.NewHandlingDispatchStream(ctx, func(result *dispatch.DispatchLookupResources2Response) error {
@@ -748,7 +756,7 @@ func (ps *permissionServer) lookupResources2(req *v1.LookupResourcesRequest, res
 			return ps.rewriteError(ctx, err)
 		}
 
-		err = resp.Send(&v1.LookupResourcesResponse{
+		err = responses.publish(&v1.LookupResourcesResponse{
 			LookedUpAt:        revisionReadAt,
 			ResourceObjectId:  found.ResourceId,
 			Permissionship:    permissionship,
@@ -759,7 +767,6 @@ func (ps *permissionServer) lookupResources2(req *v1.LookupResourcesRequest, res
 			return err
 		}
 
-		totalCountPublished++
 		return nil
 	})
 
@@ -768,34 +775,36 @@ func (ps *permissionServer) lookupResources2(req *v1.LookupResourcesRequest, res
 		return err
 	}
 
-	err = ps.dispatch.DispatchLookupResources2(
-		&dispatch.DispatchLookupResources2Request{
-			Metadata: &dispatch.ResolverMeta{
-				AtRevision:     atRevision.String(),
-				DepthRemaining: ps.config.MaximumAPIDepth,
-				TraversalBloom: bf,
-				SchemaHash:     []byte(schemaHash),
+	err = responses.run(func(limit uint32) error {
+		return ps.dispatch.DispatchLookupResources2(
+			&dispatch.DispatchLookupResources2Request{
+				Metadata: &dispatch.ResolverMeta{
+					AtRevision:     atRevision.String(),
+					DepthRemaining: ps.config.MaximumAPIDepth,
+					TraversalBloom: bf,
+					SchemaHash:     []byte(schemaHash),
+				},
+				ResourceRelation: &core.RelationReference{
+					Namespace: req.ResourceObjectType,
+					Relation:  req.Permission,
+				},
+				SubjectRelation: &core.RelationReference{
+					Namespace: req.Subject.Object.ObjectType,
+					Relation:  normalizeSubjectRelation(req.Subject),
+				},
+				SubjectIds: []string{req.Subject.Object.ObjectId},
+				TerminalSubject: &core.ObjectAndRelation{
+					Namespace: req.Subject.Object.ObjectType,
+					ObjectId:  req.Subject.Object.ObjectId,
+					Relation:  normalizeSubjectRelation(req.Subject),
+				},
+				Context:          req.Context,
+				OptionalCursor:   currentCursor,
+				OptionalLimit:    limit,
+				EnableDebugTrace: req.WithDebug,
 			},
-			ResourceRelation: &core.RelationReference{
-				Namespace: req.ResourceObjectType,
-				Relation:  req.Permission,
-			},
-			SubjectRelation: &core.RelationReference{
-				Namespace: req.Subject.Object.ObjectType,
-				Relation:  normalizeSubjectRelation(req.Subject),
-			},
-			SubjectIds: []string{req.Subject.Object.ObjectId},
-			TerminalSubject: &core.ObjectAndRelation{
-				Namespace: req.Subject.Object.ObjectType,
-				ObjectId:  req.Subject.Object.ObjectId,
-				Relation:  normalizeSubjectRelation(req.Subject),
-			},
-			Context:          req.Context,
-			OptionalCursor:   currentCursor,
-			OptionalLimit:    req.OptionalLimit,
-			EnableDebugTrace: req.WithDebug,
-		},
-		stream)
+			stream)
+	})
 	if err != nil {
 		if req.WithDebug && dispatchpkg.IsMaxDepthExceeded(err) {
 			if debugInfo := dispatchpkg.ExtractTraversalTrace(err); debugInfo != nil {

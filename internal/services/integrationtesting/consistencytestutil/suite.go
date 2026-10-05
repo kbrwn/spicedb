@@ -272,7 +272,7 @@ func ValidateLookupResources(t *testing.T, vctx ValidationContext) {
 									resolvedResources[resource.ResourceObjectId] = resource
 								}
 
-								if pageSize == 0 || len(foundResources) < int(pageSize) {
+								if currentCursor == nil || pageSize == 0 || len(foundResources) < int(pageSize) {
 									break
 								}
 							}

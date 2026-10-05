@@ -271,6 +271,12 @@ func buildRowValues(
 	return rowValues, width, nil
 }
 
+// lookupResourcesCursor distinguishes the initial fetch from an exhausted cursor,
+// whose afterResult cursor is nil.
+type lookupResourcesCursor struct {
+	afterResult *v1.Cursor
+}
+
 func buildLookupResourcesHandler(fields fieldMap[permissionsField]) (selectHandler, error) {
 	return func(ctx context.Context, client *authzed.Client, parameters []wire.Parameter, howMany int64, writer wire.DataWriter, rowsCursor RowsCursor, selectStatement *SelectStatement) (RowsCursor, error) {
 		consistency, err := consistencyFromFields(convertFieldMap(fields), parameters)
@@ -305,7 +311,10 @@ func buildLookupResourcesHandler(fields fieldMap[permissionsField]) (selectHandl
 
 		var currentCursor *v1.Cursor
 		if rowsCursor != nil {
-			currentCursor = rowsCursor.(*v1.Cursor)
+			currentCursor = rowsCursor.(*lookupResourcesCursor).afterResult
+			if currentCursor == nil {
+				return rowsCursor, writer.Complete("SELECT")
+			}
 		}
 
 		limit, err := safecast.Convert[uint32](howMany)
@@ -332,6 +341,7 @@ func buildLookupResourcesHandler(fields fieldMap[permissionsField]) (selectHandl
 			return nil, common.ConvertError(err)
 		}
 
+		var nextCursor *v1.Cursor
 		for {
 			result, err := stream.Recv()
 			if err != nil {
@@ -365,7 +375,7 @@ func buildLookupResourcesHandler(fields fieldMap[permissionsField]) (selectHandl
 			if err := writer.Row(rowValues); err != nil {
 				return nil, fmt.Errorf("error writing LR result row: %w", err)
 			}
-			currentCursor = result.AfterResultCursor
+			nextCursor = result.AfterResultCursor
 		}
 
 		cost, err := costFromTrailers(stream.Trailer())
@@ -375,7 +385,7 @@ func buildLookupResourcesHandler(fields fieldMap[permissionsField]) (selectHandl
 			lrStats.AddSample(cost, uint(writer.Written()))
 		}
 
-		return currentCursor, writer.Complete("SELECT")
+		return &lookupResourcesCursor{afterResult: nextCursor}, writer.Complete("SELECT")
 	}, nil
 }
 

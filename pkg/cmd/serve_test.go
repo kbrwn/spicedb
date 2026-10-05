@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/authzed/spicedb/pkg/cmd/server"
+	"github.com/authzed/spicedb/pkg/cmd/testserver"
 )
 
 // Run a serve command with specified command line args
@@ -94,6 +95,7 @@ func TestDefaultConfig(t *testing.T) {
 		require.Equal(t, ":8443", mergedConfig.HTTPGateway.HTTPAddress)
 		require.Equal(t, "memory", mergedConfig.DatastoreConfig.Engine)
 		require.Equal(t, uint16(1024), mergedConfig.DatastoreConfig.WatchBufferLength)
+		require.False(t, mergedConfig.EnableLookupResourcesCursorLookahead)
 	})
 }
 
@@ -105,6 +107,7 @@ func TestFlagsAreParsed(t *testing.T) {
 		"--http-addr", "127.0.0.1:9443",
 		"--datastore-engine", "memory",
 		"--datastore-watch-buffer-length", "9000",
+		"--experimental-lookup-resources-cursor-lookahead",
 	}
 	RunServeTest(t, flags, func(t *testing.T, mergedConfig *server.Config) {
 		require.True(t, mergedConfig.GRPCServer.Enabled)
@@ -113,6 +116,7 @@ func TestFlagsAreParsed(t *testing.T) {
 		require.Equal(t, "127.0.0.1:9443", mergedConfig.HTTPGateway.HTTPAddress)
 		require.Equal(t, "memory", mergedConfig.DatastoreConfig.Engine)
 		require.Equal(t, uint16(9000), mergedConfig.DatastoreConfig.WatchBufferLength)
+		require.True(t, mergedConfig.EnableLookupResourcesCursorLookahead)
 	})
 }
 
@@ -123,6 +127,7 @@ func TestEnvVarsAreParsed(t *testing.T) {
 	t.Setenv("SPICEDB_HTTP_ADDR", "127.0.0.1:10443")
 	t.Setenv("SPICEDB_DATASTORE_ENGINE", "memory")
 	t.Setenv("SPICEDB_DATASTORE_WATCH_BUFFER_LENGTH", "10000")
+	t.Setenv("SPICEDB_EXPERIMENTAL_LOOKUP_RESOURCES_CURSOR_LOOKAHEAD", "true")
 	flags := []string{}
 	RunServeTest(t, flags, func(t *testing.T, mergedConfig *server.Config) {
 		require.True(t, mergedConfig.GRPCServer.Enabled)
@@ -131,6 +136,7 @@ func TestEnvVarsAreParsed(t *testing.T) {
 		require.Equal(t, "127.0.0.1:10443", mergedConfig.HTTPGateway.HTTPAddress)
 		require.Equal(t, "memory", mergedConfig.DatastoreConfig.Engine)
 		require.Equal(t, uint16(10000), mergedConfig.DatastoreConfig.WatchBufferLength)
+		require.True(t, mergedConfig.EnableLookupResourcesCursorLookahead)
 	})
 }
 
@@ -193,11 +199,13 @@ func TestConfigPrecedence(t *testing.T) {
 	t.Setenv("SPICEDB_HTTP_ADDR", "127.0.0.1:22443")
 	t.Setenv("SPICEDB_DATASTORE_ENGINE", "memory")
 	t.Setenv("SPICEDB_DATASTORE_WATCH_BUFFER_LENGTH", "22000")
+	t.Setenv("SPICEDB_EXPERIMENTAL_LOOKUP_RESOURCES_CURSOR_LOOKAHEAD", "true")
 
 	// command line flags override everything
 	flags := []string{
 		"--datastore-engine", "memory",
 		"--datastore-watch-buffer-length", "23000",
+		"--experimental-lookup-resources-cursor-lookahead=false",
 	}
 	RunServeTest(t, flags, func(t *testing.T, mergedConfig *server.Config) {
 		require.True(t, mergedConfig.GRPCServer.Enabled)
@@ -206,5 +214,18 @@ func TestConfigPrecedence(t *testing.T) {
 		require.Equal(t, "127.0.0.1:22443", mergedConfig.HTTPGateway.HTTPAddress)
 		require.Equal(t, "memory", mergedConfig.DatastoreConfig.Engine)
 		require.Equal(t, uint16(23000), mergedConfig.DatastoreConfig.WatchBufferLength)
+		require.False(t, mergedConfig.EnableLookupResourcesCursorLookahead)
 	})
+}
+
+func TestLookupResourcesCursorLookaheadTestingFlag(t *testing.T) {
+	config := &testserver.Config{}
+	cmd := NewTestingCommand("spicedb", config)
+	RegisterTestingFlags(cmd, config)
+
+	require.False(t, config.EnableLookupResourcesCursorLookahead)
+	require.NoError(t, cmd.ParseFlags([]string{"--experimental-lookup-resources-cursor-lookahead"}))
+	require.True(t, config.EnableLookupResourcesCursorLookahead)
+	require.NoError(t, cmd.ParseFlags([]string{"--experimental-lookup-resources-cursor-lookahead=false"}))
+	require.False(t, config.EnableLookupResourcesCursorLookahead)
 }

@@ -617,6 +617,7 @@ spicedb serve [flags]
       --experimental-dispatch-secondary-maximum-primary-hedging-delays stringToString   maximum number of hedging delays to use for each request type to delay the primary request. default is 5ms (default [])
       --experimental-dispatch-secondary-upstream-addrs stringToString                   secondary upstream addresses for dispatches, each with a name (default [])
       --experimental-dispatch-secondary-upstream-exprs stringToString                   map from request type to its associated CEL expression, which returns the secondary upstream(s) to be used for the request (default [])
+      --experimental-lookup-resources-cursor-lookahead                                  resolve one additional LookupResources result to omit the cursor when no more results remain
       --experimental-lookup-resources-version lr3                                       if non-empty, the version of the experimental lookup resources API to use: lr3 or empty
       --experimental-query-plan check                                                   comma-separated list of operations to route through the experimental query plan engine; valid values are check, `lr` (LookupResources), and `ls` (LookupSubjects)
       --experimental-schema-mode string                                                 schema storage mode for migration to unified schema: read-legacy-write-legacy, read-legacy-write-both, read-new-write-both, read-new-write-new (default "read-legacy-write-legacy")
@@ -698,6 +699,7 @@ spicedb serve-testing [flags]
 ### Options
 
 ```
+      --experimental-lookup-resources-cursor-lookahead           resolve one additional LookupResources result to omit the cursor when no more results remain
       --grpc-addr string                                         address to listen on to serve gRPC (default ":50051")
       --grpc-enabled                                             enable gRPC gRPC server (default true)
       --grpc-max-conn-age duration                               how long a connection serving gRPC should be able to live (default 30s)
